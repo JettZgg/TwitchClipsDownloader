@@ -10,6 +10,8 @@ from downloader.clip_loader import load_clips_info
 from downloader.downloader import download_clips
 from utils.logger import setup_logger, GUILogHandler
 from PyQt6.QtGui import QColor, QPalette, QTextCharFormat
+import os
+from pathlib import Path
 
 class DownloadThread(QThread):
     finished = pyqtSignal()
@@ -63,10 +65,11 @@ class TwitchClipDownloaderGUI(QMainWindow):
         self.layout.addLayout(output_layout)
 
         # Set default output directory
-        default_output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
-        if not os.path.exists(default_output_dir):
-            os.makedirs(default_output_dir)
-        self.output_entry.setText(default_output_dir)
+        default_download_path = str(Path.home() / "Downloads")
+        self.default_output_dir = os.path.join(default_download_path, "clips")
+        if not os.path.exists(self.default_output_dir):
+            os.makedirs(self.default_output_dir)
+        self.output_entry.setText(self.default_output_dir)
 
         # Log area
         self.log_text = QTextEdit()
@@ -96,15 +99,11 @@ class TwitchClipDownloaderGUI(QMainWindow):
 
     def start_download(self):
         input_text = self.input_text.toPlainText()
-        output_dir = self.output_entry.text()
+        output_dir = self.output_entry.text() or self.default_output_dir
 
         if not input_text.strip():
             self.log_text.append("Please enter clip information.")
             return
-
-        if not output_dir:
-            output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
-            self.output_entry.setText(output_dir)
 
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)

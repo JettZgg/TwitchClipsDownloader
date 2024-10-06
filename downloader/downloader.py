@@ -20,31 +20,15 @@ def download_clip(clip_info, output_dir, logger):
     :param output_dir: Directory to save the file
     :param logger: Logger object
     """
-    name = clip_info['name']
-    url = clip_info['url']
+    clip_url = clip_info['url']
+    clip_name = clip_info['name']
     
-    try:
-        logger.info(f"Downloading: {name}")
-        print(f"Attempting to download: {name} from {url}")
-        
-        options = Options()
-        options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        
-        with webdriver.Chrome(options=options) as driver:
-            download_url = get_clip_download_url(driver, url)
-            if download_url:
-                print(f"Got download URL: {download_url}")
-                save_clip(download_url, name, output_dir)
-                logger.info(f"Download completed: {name}")
-                print(f"Download completed: {name}")
-            else:
-                logger.error(f"Unable to parse download link: {name}")
-                print(f"Failed to get download URL for: {name}")
-    except Exception as e:
-        logger.error(f"Failed to download clip {name}: {str(e)}")
-        print(f"Error downloading {name}: {str(e)}")
+    download_url = get_clip_download_url(clip_url)
+    if download_url:
+        save_clip(download_url, clip_name, output_dir)
+        logger.info(f"Download completed: {clip_name}")
+    else:
+        logger.error(f"Failed to get download URL for {clip_name}")
 
 def download_clips(clips_info, output_dir, max_workers=5, cancel_flag=None, logger=None):
     """
