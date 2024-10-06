@@ -6,10 +6,12 @@ This software can download multiple twitch clips simultaneously.
 2. Input your prepared links and corresponding titles
 
 ![{69388489-DB0B-45DF-B0B8-385D9D7CD662}](https://github.com/user-attachments/assets/541d3e98-1cfd-4f48-9eb1-4f5ee3973e5f)
+
 3. Click "Start Download" 
 4. Wait until "Download completed" pops up on the log window
 
 ![{CC2103EC-0EF4-407D-8118-214F452D858D}](https://github.com/user-attachments/assets/117e1a49-239a-43ca-98b0-47b89c6b2cba)
+
 5. Check the output folder, the default one is "Downloads/clips"
 6. There we go
 
