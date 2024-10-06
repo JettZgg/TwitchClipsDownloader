@@ -5,19 +5,26 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
-import time
+import logging
 
-def get_clip_download_url(driver, clip_url):
+def get_clip_download_url(clip_url):
     """
     Get the download link for a Twitch clip.
     
-    :param driver: Selenium WebDriver instance
     :param clip_url: URL of the Twitch clip page.
     :return: Download URL of the clip, or None if failed.
     """
-    print(f"Fetching clip page: {clip_url}")
+    options = Options()
+    options.add_argument("--headless")  # Run in headless mode
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
     
     try:
+        print(f"Fetching clip page: {clip_url}")
+        
         driver.get(clip_url)
         
         # Wait for the video element to be present
@@ -35,5 +42,7 @@ def get_clip_download_url(driver, clip_url):
             print("Could not find video URL")
             return None
     except Exception as e:
-        print(f"Error parsing Twitch page: {str(e)}")
+        logging.error(f"Error parsing clip {clip_url}: {str(e)}")
         return None
+    finally:
+        driver.quit()
