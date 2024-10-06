@@ -1,0 +1,6 @@
+requests
+beautifulsoup4
+PyQt6
+selenium
+webdriver_manager
+pyinstaller
