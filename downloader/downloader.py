@@ -30,42 +30,32 @@ def download_clip(clip_info, output_dir, logger):
     else:
         logger.error(f"Failed to get download URL for {clip_name}")
 
-def download_clips(clips_info, output_dir, max_workers=5, cancel_flag=None, logger=None):
+def download_clips(clips_info, output_dir, max_workers=5, logger=None):
     """
     Download multiple Twitch clips in parallel.
     
     :param clips_info: List containing all clip information (name and url).
     :param output_dir: Directory to save the files.
     :param max_workers: Maximum number of concurrent threads.
-    :param cancel_flag: Cancel flag to stop the download process.
     :param logger: Logger object
     """
     if logger is None:
         from utils.logger import setup_logger
         logger = setup_logger()
 
-    print(f"Starting download of {len(clips_info)} clips to {output_dir}")
     logger.info(f"Starting download of {len(clips_info)} clips to {output_dir}")
     
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-        print(f"Created output directory: {output_dir}")
         logger.info(f"Created output directory: {output_dir}")
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [executor.submit(download_clip, clip_info, output_dir, logger) for clip_info in clips_info]
         for future in futures:
-            if cancel_flag and cancel_flag.is_set():
-                executor.shutdown(wait=False)
-                print("Download cancelled")
-                logger.info("Download cancelled")
-                break
             try:
                 future.result()  # This will raise any exceptions that occurred during download
             except Exception as e:
-                print(f"Error in future: {str(e)}")
                 logger.error(f"Error in future: {str(e)}")
     
-    print("All downloads completed or cancelled")
-    logger.info("All downloads completed or cancelled")
+    logger.info("All downloads completed")
 

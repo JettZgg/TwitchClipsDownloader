@@ -3,35 +3,31 @@ from PyQt6.QtWidgets import (
     QPushButton, QTextEdit, QLineEdit, QLabel, QFileDialog
 )
 from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtGui import QPalette, QColor, QTextCharFormat
 import sys
 import os
-from typing import Optional
-from downloader.clip_loader import load_clips_info
-from downloader.downloader import download_clips
-from utils.logger import setup_logger, GUILogHandler
-from PyQt6.QtGui import QColor, QPalette, QTextCharFormat
-import os
 from pathlib import Path
+from typing import Optional
+from downloader.downloader import download_clips
+from downloader.clip_loader import load_clips_info
+from utils.logger import setup_logger, GUILogHandler
 
 class DownloadThread(QThread):
     finished = pyqtSignal()
     error = pyqtSignal(str)
-    
-    def __init__(self, input_text: str, output_dir: str):
+
+    def __init__(self, clips_info, output_dir, logger):
         super().__init__()
-        self.input_text = input_text
+        self.clips_info = clips_info
         self.output_dir = output_dir
-        self.gui_log_handler = GUILogHandler()
-        
+        self.logger = logger
+
     def run(self):
         try:
-            logger = setup_logger(gui_handler=self.gui_log_handler)
-            clips_info = load_clips_info(self.input_text)
-            download_clips(clips_info, self.output_dir, logger=logger)
+            download_clips(self.clips_info, self.output_dir, logger=self.logger)
+            self.finished.emit()
         except Exception as e:
             self.error.emit(str(e))
-        finally:
-            self.finished.emit()
 
 class TwitchClipDownloaderGUI(QMainWindow):
     def __init__(self):
@@ -45,12 +41,24 @@ class TwitchClipDownloaderGUI(QMainWindow):
 
         self.setup_ui()
         self.set_dark_mode_styles()
-        self.logger = setup_logger()
+
+        # Set default output directory
+        default_download_path = str(Path.home() / "Downloads")
+        self.default_output_dir = os.path.join(default_download_path, "clips")
+        if not os.path.exists(self.default_output_dir):
+            os.makedirs(self.default_output_dir)
+        self.output_entry.setText(self.default_output_dir)
+
+        self.gui_log_handler = GUILogHandler()
+        self.gui_log_handler.new_log.connect(self.update_log)
+        self.logger = setup_logger(gui_handler=self.gui_log_handler)
         self.download_thread: Optional[DownloadThread] = None
 
     def setup_ui(self):
         # Input text area
         self.input_text = QTextEdit()
+        self.input_text.setAcceptRichText(False)
+        self.input_text.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
         self.layout.addWidget(QLabel("Clip Information:"))
         self.layout.addWidget(self.input_text)
 
@@ -64,13 +72,6 @@ class TwitchClipDownloaderGUI(QMainWindow):
         output_layout.addWidget(self.output_button)
         self.layout.addLayout(output_layout)
 
-        # Set default output directory
-        default_download_path = str(Path.home() / "Downloads")
-        self.default_output_dir = os.path.join(default_download_path, "clips")
-        if not os.path.exists(self.default_output_dir):
-            os.makedirs(self.default_output_dir)
-        self.output_entry.setText(self.default_output_dir)
-
         # Log area
         self.log_text = QTextEdit()
         self.log_text.setReadOnly(True)
@@ -81,62 +82,11 @@ class TwitchClipDownloaderGUI(QMainWindow):
         button_layout = QHBoxLayout()
         self.start_button = QPushButton("Start Download")
         self.start_button.clicked.connect(self.start_download)
-        self.cancel_button = QPushButton("Cancel")
-        self.cancel_button.clicked.connect(self.cancel_download)
-        self.cancel_button.setEnabled(False)
+        self.quit_button = QPushButton("Quit")
+        self.quit_button.clicked.connect(self.quit_application)
         button_layout.addWidget(self.start_button)
-        button_layout.addWidget(self.cancel_button)
+        button_layout.addWidget(self.quit_button)
         self.layout.addLayout(button_layout)
-
-        # Add these lines at the end of setup_ui method
-        self.input_text.setAcceptRichText(False)
-        self.input_text.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
-
-    def select_output_directory(self):
-        directory = QFileDialog.getExistingDirectory(self, "Select Output Directory")
-        if directory:
-            self.output_entry.setText(directory)
-
-    def start_download(self):
-        input_text = self.input_text.toPlainText()
-        output_dir = self.output_entry.text() or self.default_output_dir
-
-        if not input_text.strip():
-            self.log_text.append("Please enter clip information.")
-            return
-
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-
-        self.start_button.setEnabled(False)
-        self.start_button.setStyleSheet(self.start_button.styleSheet())
-        self.cancel_button.setEnabled(True)
-        self.cancel_button.setStyleSheet(self.cancel_button.styleSheet())
-
-        self.download_thread = DownloadThread(input_text, output_dir)
-        self.download_thread.gui_log_handler.new_log.connect(self.update_log)
-        self.download_thread.finished.connect(self.download_finished)
-        self.download_thread.error.connect(self.handle_error)
-        self.download_thread.start()
-
-    def cancel_download(self):
-        if self.download_thread and self.download_thread.isRunning():
-            self.download_thread.terminate()
-            self.log_text.append("Download cancelled.")
-            self.download_finished()
-
-    def download_finished(self):
-        self.start_button.setEnabled(True)
-        self.start_button.setStyleSheet(self.start_button.styleSheet())
-        self.cancel_button.setEnabled(False)
-        self.cancel_button.setStyleSheet(self.cancel_button.styleSheet())
-
-    def update_log(self, message: str):
-        self.log_text.append(message)
-
-    def handle_error(self, error_message: str):
-        self.log_text.append(f"Error: {error_message}")
-        self.download_finished()
 
     def set_dark_mode_styles(self):
         # Set dark background and light text for better contrast
@@ -188,7 +138,6 @@ class TwitchClipDownloaderGUI(QMainWindow):
             QPushButton {
                 background-color: #4a4a4a;
                 color: #ffffff;
-                border: 1px solid #555555;
                 padding: 5px;
             }
             QPushButton:hover {
@@ -204,7 +153,48 @@ class TwitchClipDownloaderGUI(QMainWindow):
         """
         self.output_button.setStyleSheet(button_style)
         self.start_button.setStyleSheet(button_style)
-        self.cancel_button.setStyleSheet(button_style)
+        self.quit_button.setStyleSheet(button_style)
+
+    def select_output_directory(self):
+        dir_path = QFileDialog.getExistingDirectory(self, "Select Output Directory")
+        if dir_path:
+            self.output_entry.setText(dir_path)
+
+    def start_download(self):
+        input_text = self.input_text.toPlainText()
+        output_dir = self.output_entry.text() or self.default_output_dir
+
+        if not input_text.strip():
+            self.log_text.append("Please enter clip information.")
+            return
+
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        clips_info = load_clips_info(input_text)
+        self.download_thread = DownloadThread(clips_info, output_dir, self.logger)
+        self.download_thread.finished.connect(self.download_finished)
+        self.download_thread.error.connect(self.handle_error)
+        self.download_thread.start()
+
+        self.start_button.setEnabled(False)
+        self.start_button.setStyleSheet(self.start_button.styleSheet())
+
+    def download_finished(self):
+        self.log_text.append("Download completed.")
+        self.start_button.setEnabled(True)
+        self.start_button.setStyleSheet(self.start_button.styleSheet())
+
+    def handle_error(self, error_message):
+        self.log_text.append(f"Error: {error_message}")
+        self.start_button.setEnabled(True)
+        self.start_button.setStyleSheet(self.start_button.styleSheet())
+
+    def update_log(self, message):
+        self.log_text.append(message)
+
+    def quit_application(self):
+        QApplication.quit()
 
 def main():
     app = QApplication(sys.argv)
