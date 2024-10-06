@@ -20,9 +20,10 @@ def get_clip_download_url(clip_url):
     options.add_argument("--disable-dev-shm-usage")
     
     service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=options)
+    driver = None
     
     try:
+        driver = webdriver.Chrome(service=service, options=options)
         print(f"Fetching clip page: {clip_url}")
         
         driver.get(clip_url)
@@ -45,4 +46,5 @@ def get_clip_download_url(clip_url):
         logging.error(f"Error parsing clip {clip_url}: {str(e)}")
         return None
     finally:
-        driver.quit()
+        if driver:
+            driver.quit()  # This should close the browser window
