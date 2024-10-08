@@ -50,31 +50,38 @@ def download_clips(clips_info, output_dir, max_workers=5, logger=None):
         os.makedirs(output_dir)
         logger.info(f"Created output directory: {output_dir}")
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = []
-        for clip in clips_info:
-            future = executor.submit(download_single_clip, clip, output_dir, logger)
-            futures.append(future)
-        
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                future.result()
-            except Exception as e:
-                if logger:
-                    logger.error(f"Error downloading clip: {str(e)}")
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
 
-def download_single_clip(clip, output_dir, logger):
+    with webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options) as driver:
+        try:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = [executor.submit(download_single_clip, clip, output_dir, logger, driver) for clip in clips_info]
+                
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        future.result()
+                    except Exception as e:
+                        logger.error(f"Error downloading clip: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error in download process: {str(e)}")
+        finally:
+            logger.info("Download process completed")
+
+def download_single_clip(clip, output_dir, logger, driver):
     clip_url = clip['url']
     clip_name = clip['name']
     
-    if logger:
-        logger.info(f"Processing clip: {clip_name}")
+    logger.info(f"Processing clip: {clip_name}")
     
-    download_url = get_clip_download_url(clip_url)
-    if download_url:
-        save_clip(download_url, clip_name, output_dir)
-        if logger:
+    try:
+        download_url = get_clip_download_url(clip_url, driver)
+        if download_url:
+            save_clip(download_url, clip_name, output_dir)
             logger.info(f"Download completed: {clip_name}")
-    else:
-        if logger:
+        else:
             logger.error(f"Failed to get download URL for clip: {clip_name}")
+    except Exception as e:
+        logger.error(f"Error processing clip {clip_name}: {str(e)}")

@@ -7,23 +7,15 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 import logging
 
-def get_clip_download_url(clip_url):
+def get_clip_download_url(clip_url, driver):
     """
     Get the download link for a Twitch clip.
     
     :param clip_url: URL of the Twitch clip page.
+    :param driver: WebDriver instance to use for fetching the page.
     :return: Download URL of the clip, or None if failed.
     """
-    options = Options()
-    options.add_argument("--headless")  # Run in headless mode
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    
-    service = Service(ChromeDriverManager().install())
-    driver = None
-    
     try:
-        driver = webdriver.Chrome(service=service, options=options)
         print(f"Fetching clip page: {clip_url}")
         
         driver.get(clip_url)
@@ -45,6 +37,3 @@ def get_clip_download_url(clip_url):
     except Exception as e:
         logging.error(f"Error parsing clip {clip_url}: {str(e)}")
         return None
-    finally:
-        if driver:
-            driver.quit()  # This should close the browser window

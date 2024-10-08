@@ -78,15 +78,10 @@ class TwitchClipDownloaderGUI(QMainWindow):
         self.layout.addWidget(QLabel("Log:"))
         self.layout.addWidget(self.log_text)
 
-        # Buttons
-        button_layout = QHBoxLayout()
+        # Start Download button
         self.start_button = QPushButton("Start Download")
         self.start_button.clicked.connect(self.start_download)
-        self.quit_button = QPushButton("Quit")
-        self.quit_button.clicked.connect(self.quit_application)
-        button_layout.addWidget(self.start_button)
-        button_layout.addWidget(self.quit_button)
-        self.layout.addLayout(button_layout)
+        self.layout.addWidget(self.start_button)
 
     def set_dark_mode_styles(self):
         # Set dark background and light text for better contrast
@@ -153,7 +148,6 @@ class TwitchClipDownloaderGUI(QMainWindow):
         """
         self.output_button.setStyleSheet(button_style)
         self.start_button.setStyleSheet(button_style)
-        self.quit_button.setStyleSheet(button_style)
 
     def select_output_directory(self):
         dir_path = QFileDialog.getExistingDirectory(self, "Select Output Directory")
@@ -192,9 +186,6 @@ class TwitchClipDownloaderGUI(QMainWindow):
 
     def update_log(self, message):
         self.log_text.append(message)
-
-    def quit_application(self):
-        QApplication.quit()
 
 def main():
     app = QApplication(sys.argv)
