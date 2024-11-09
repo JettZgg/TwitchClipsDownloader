@@ -75,7 +75,6 @@ class TwitchClipDownloaderGUI(QMainWindow):
         # Log area
         self.log_text = QTextEdit()
         self.log_text.setReadOnly(True)
-        self.layout.addWidget(QLabel("Log:"))
         self.layout.addWidget(self.log_text)
 
         # Start Download button
