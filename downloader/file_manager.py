@@ -31,11 +31,12 @@ def save_clip(download_url, clip_name, output_dir, file_counter):
     Download and save a Twitch clip to the specified directory.
     
     :param download_url: Download URL.
-    :param clip_name: Name of the clip (number).
+    :param clip_name: Name of the clip (including order and username with case preserved).
     :param output_dir: Output directory.
     :param file_counter: Thread-safe counter for file naming.
     """
     try:
+        # Create file path with exact case preservation
         file_path = os.path.join(output_dir, f"{clip_name}.mp4")
         
         response = requests.get(download_url, stream=True)

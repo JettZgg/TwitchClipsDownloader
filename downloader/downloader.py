@@ -79,15 +79,17 @@ def download_clips(clips_info, output_dir, max_workers=5, logger=None):
 
 def download_single_clip(clip, output_dir, logger, driver, file_counter):
     clip_url = clip['url']
+    clip_order = clip['order']
+    player_name = clip['player']
+    filename = f"{clip_order}@{player_name}"
     
     try:
         download_url = get_clip_download_url(clip_url, driver)
         if download_url:
-            next_number = file_counter.get_next()
-            logger.info(f"Processing clip: {next_number}")
-            save_clip(download_url, str(next_number), output_dir, file_counter)
-            logger.info(f"Download completed: {next_number}")
+            logger.info(f"Processing clip: {filename}")
+            save_clip(download_url, filename, output_dir, file_counter)
+            logger.info(f"Download completed: {filename}")
         else:
-            logger.error(f"Failed to get download URL for clip")
+            logger.error(f"Failed to get download URL for clip {filename}")
     except Exception as e:
         logger.error(f"Error downloading clip: {str(e)}")
