@@ -1,5 +1,5 @@
 ## What this do?
-This software can download multiple twitch clips simultaneously.
+This software can download multiple twitch clips simultaneously for the [Youtube Channel LOCKIN](https://www.youtube.com/@DeadlockByLOCKIN) editors.
 
 ## How to use it?
 1. Open the software
